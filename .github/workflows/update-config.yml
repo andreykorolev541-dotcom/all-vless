@@ -1,0 +1,39 @@
+name: Update Working Configs
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # каждые 6 часов
+  workflow_dispatch:          # ручной запуск из GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run config checker
+        run: python scripts/check_configs.py
+
+      - name: Commit updated configs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add configs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            STATS=$(python -c "import json; d=json.load(open('configs/stats.json')); print(f\"working={d['working']}, checked={d['total_checked']}\")")
+            git commit -m "chore: auto-update configs [$STATS] $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
