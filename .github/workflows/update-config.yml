@@ -2,7 +2,7 @@ name: Update Working Configs
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */2 * * *"   # каждые 2 часа
   workflow_dispatch:
 
 permissions:
@@ -33,7 +33,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            STATS=$(python -c "import json; d=json.load(open('configs/stats.json')); print(f\"working={d['working_total']}, checked={d['total_checked']}\")")
+            STATS=$(python -c "import json; d=json.load(open('configs/stats.json')); print(f\"top={d['saved_top']}, checked={d['total_checked']}\")")
             git commit -m "chore: auto-update configs [$STATS] $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push
           fi
