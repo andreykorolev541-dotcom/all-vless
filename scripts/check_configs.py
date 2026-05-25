@@ -3,33 +3,98 @@ import base64, socket, ssl, sys, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json, os, time, random
 
+# Каждая запись — (название/канал, url)
 SOURCES = [
-    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vless.txt",
-    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity.txt",
-    "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/normal/vless",
-    "https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray",
-    "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2",
-    "https://raw.githubusercontent.com/freefq/free/master/v2",
-    "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub",
-    "https://raw.githubusercontent.com/peasoft/NoMoreVPN/master/subscriptions/raw.txt",
-    "https://raw.githubusercontent.com/vveg26/chromego_merge/main/sub/merged_proxies_new.txt",
-    "https://raw.githubusercontent.com/ALIILAPRO/v2ray/main/sub.txt",
-    "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt",
-    "https://raw.githubusercontent.com/Leon406/SubCrawler/main/sub/share/vless",
-    "https://raw.githubusercontent.com/ssrsub/ssr/master/V2Ray",
-    "https://raw.githubusercontent.com/ts-sf/v2ray/main/v",
-    "https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt",
-    "https://raw.githubusercontent.com/w1770946460/v2ray_free_node/main/sub",
-    "https://raw.githubusercontent.com/1904240202/v2rayShare/main/v2ray",
-    "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/base64/mix",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt",
-    "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/Eternity.txt",
+    # ── Агрегаторы Telegram-каналов (собирают из 50-100+ каналов) ──────────
+    ("TG: soroushmirzaei [vless]",
+     "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless"),
+    ("TG: soroushmirzaei [mix]",
+     "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/subscribe/protocols/vless"),
+    ("TG: yebekhe-collector [vless]",
+     "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/normal/vless"),
+    ("TG: yebekhe-collector [mix b64]",
+     "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/base64/mix"),
+    ("TG: yebekhe-HiN-VPN",
+     "https://raw.githubusercontent.com/itsyebekhe/HiN-VPN/main/subscription/normal/mix"),
+    ("TG: yebekhe-PSG",
+     "https://raw.githubusercontent.com/itsyebekhe/PSG/main/subscriptions/xray/normal/mix"),
+    ("TG: yebekhe-ConfigHub",
+     "https://raw.githubusercontent.com/yebekhe/ConfigHub/main/Eternity/normal/mix"),
+
+    # ── Популярные Telegram-каналы (прямые зеркала на GitHub) ──────────────
+    # @freev2rayssr, @v2rayNG_Backup и др.
+    ("TG: freefq/free",
+     "https://raw.githubusercontent.com/freefq/free/master/v2"),
+    # @v2rayng_config, @configV2rayForFree и др.
+    ("TG: aiboboxx/v2rayfree",
+     "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2"),
+    # @DirectVPN, @PrivateVPNs
+    ("TG: peasoft/NoMoreVPN",
+     "https://raw.githubusercontent.com/peasoft/NoMoreVPN/master/subscriptions/raw.txt"),
+    # @iP_CF, @vpnmesh, @foxvpn1
+    ("TG: mahdibland/V2RayAggregator",
+     "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity.txt"),
+    # @MatterVPN, @v2ray_configs
+    ("TG: Epodonios [vless]",
+     "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt"),
+    ("TG: Epodonios [all]",
+     "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt"),
+    # @V2rayNGn, @vpn_xray
+    ("TG: barry-far [vless]",
+     "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vless.txt"),
+    ("TG: barry-far [all]",
+     "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt"),
+    # @IranianCypherpunks
+    ("TG: IranianCypherpunks",
+     "https://raw.githubusercontent.com/IranianCypherpunks/sub/main/config"),
+    # @ShadowProxy, @v2ray_free_ir
+    ("TG: MhdiTaheri/V2rayCollector",
+     "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/vless"),
+    # @MatinVPN
+    ("TG: MatinMollapur01/OpenNet",
+     "https://raw.githubusercontent.com/MatinMollapur01/OpenNet/main/sub"),
+    # @Everyday_VPN
+    ("TG: Everyday-VPN",
+     "https://raw.githubusercontent.com/Everyday-VPN/Everyday-VPN/main/subscription/main.txt"),
+    # @shabane_vpn
+    ("TG: shabane/kamaji",
+     "https://raw.githubusercontent.com/shabane/kamaji/master/hub/merged.txt"),
+    # @surfboard_v2ray
+    ("TG: Surfboardv2ray [sorted vless]",
+     "https://raw.githubusercontent.com/Surfboardv2ray/Proxy-sorter/main/subdata/sorted/vless"),
+    # @SoliSpiritVPN
+    ("TG: SoliSpirit [vless]",
+     "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Protocols/vless.txt"),
+    # @vpei_channel
+    ("TG: vpei/Free-Node-Merge",
+     "https://raw.githubusercontent.com/vpei/Free-Node-Merge/main/o/config.txt"),
+    # @mfuu_v2ray
+    ("TG: mfuu/v2ray",
+     "https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray"),
+    # @ermaozi_sub
+    ("TG: ermaozi/get_subscribe",
+     "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt"),
+    # @LeonSub
+    ("TG: Leon406/SubCrawler [vless]",
+     "https://raw.githubusercontent.com/Leon406/SubCrawler/main/sub/share/vless"),
+    # @ts_sf_v2ray
+    ("TG: ts-sf/v2ray",
+     "https://raw.githubusercontent.com/ts-sf/v2ray/main/v"),
+    # @ssrsub
+    ("TG: ssrsub/ssr",
+     "https://raw.githubusercontent.com/ssrsub/ssr/master/V2Ray"),
+    # @vveg26
+    ("TG: vveg26/chromego_merge",
+     "https://raw.githubusercontent.com/vveg26/chromego_merge/main/sub/merged_proxies_new.txt"),
+    # @ALIILAPRO
+    ("TG: ALIILAPRO/v2ray",
+     "https://raw.githubusercontent.com/ALIILAPRO/v2ray/main/sub.txt"),
 ]
 
 OUTPUT_DIR  = "configs"
 TIMEOUT     = 4
 MAX_WORKERS = 100
-PER_SOURCE  = 100
+PER_SOURCE  = 150
 
 
 def fetch_url(url):
@@ -131,12 +196,12 @@ def save_sub(name, lines):
 
 
 def main():
-    print(f"=== VLESS Checker | до {PER_SOURCE} из каждого источника ===\n")
+    print(f"=== VLESS Checker | {len(SOURCES)} источников, до {PER_SOURCE} с каждого ===\n")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    print(f"[1/3] Сбор (макс. {PER_SOURCE} из каждого из {len(SOURCES)} источников)...")
+    print(f"[1/3] Сбор (макс. {PER_SOURCE} с каждого источника)...")
     all_vless = set()
-    for url in SOURCES:
+    for name, url in SOURCES:
         raw = fetch_url(url)
         if not raw:
             continue
@@ -146,7 +211,7 @@ def main():
             continue
         if len(vless) > PER_SOURCE:
             vless = random.sample(vless, PER_SOURCE)
-        print(f"  +{len(vless):3d}  {url.split('github.com/')[-1][:60]}")
+        print(f"  +{len(vless):3d}  {name}")
         all_vless.update(vless)
 
     configs = list(all_vless)
