@@ -2,7 +2,7 @@ name: Update Working Configs
 
 on:
   schedule:
-    - cron: "0 */2 * * *"
+      - cron: "0 */6 * * *"   # каждые 6 часов (~840 мин/месяц из 2000)
   workflow_dispatch:
 
 permissions:
