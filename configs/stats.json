@@ -1,10 +1,10 @@
 {
-  "last_updated": "2026-05-25T20:19:28Z",
+  "last_updated": "2026-05-26T02:36:58Z",
   "sources": 30,
   "per_source_limit": 150,
-  "total_checked": 962,
-  "working_total": 555,
-  "working_reality": 69,
-  "working_regular": 486,
-  "elapsed_seconds": 65.5
+  "total_checked": 863,
+  "working_total": 467,
+  "working_reality": 74,
+  "working_regular": 393,
+  "elapsed_seconds": 64.8
 }
