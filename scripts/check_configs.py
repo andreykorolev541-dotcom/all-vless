@@ -1,260 +1,176 @@
 #!/usr/bin/env python3
-import base64, socket, ssl, sys, urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import json, os, time, random
+import urllib.request, os, time, json, random, re
 
-# Используем зеркала githack/cdn вместо raw.githubusercontent (быстрее в РФ)
-RAW = "https://raw.githubusercontent.com"
-GH  = "https://rawcdn.githack.com"   # CDN-зеркало GitHub, работает в РФ
+# ── CIDR источники ─────────────────────────────────────────────────────────
 
-SOURCES = [
-    # ── igareck — Reality белые списки для России ─────────────────────────
-    ("igareck [Reality RU Mobile #1]",
-     f"{RAW}/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt"),
-    ("igareck [Reality RU Mobile #2]",
-     f"{RAW}/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile-2.txt"),
-
-    # ── soroushmirzaei — крупнейший агрегатор TG каналов ──────────────────
-    ("soroushmirzaei [vless]",
-     f"{RAW}/soroushmirzaei/telegram-configs-collector/main/protocols/vless"),
-    ("soroushmirzaei [vless sub]",
-     f"{RAW}/soroushmirzaei/telegram-configs-collector/main/subscribe/protocols/vless"),
-
-    # ── yebekhe агрегаторы ─────────────────────────────────────────────────
-    ("yebekhe [vless]",
-     f"{RAW}/yebekhe/TelegramV2rayCollector/main/sub/normal/vless"),
-    ("yebekhe [mix b64]",
-     f"{RAW}/yebekhe/TelegramV2rayCollector/main/sub/base64/mix"),
-    ("yebekhe HiN-VPN",
-     f"{RAW}/itsyebekhe/HiN-VPN/main/subscription/normal/mix"),
-    ("yebekhe ConfigHub",
-     f"{RAW}/yebekhe/ConfigHub/main/Eternity/normal/mix"),
-
-    # ── barry-far ──────────────────────────────────────────────────────────
-    ("barry-far [vless]",
-     f"{RAW}/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vless.txt"),
-    ("barry-far [all]",
-     f"{RAW}/barry-far/V2ray-Configs/main/All_Configs_Sub.txt"),
-
-    # ── Epodonios ──────────────────────────────────────────────────────────
-    ("Epodonios [vless]",
-     f"{RAW}/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt"),
-
-    # ── Россия-фокус ───────────────────────────────────────────────────────
-    ("peasoft NoMoreVPN [RU]",
-     f"{RAW}/peasoft/NoMoreVPN/master/subscriptions/raw.txt"),
-    ("mahdibland V2RayAggregator",
-     f"{RAW}/mahdibland/V2RayAggregator/master/Eternity.txt"),
-    ("SoliSpirit [vless]",
-     f"{RAW}/SoliSpirit/v2ray-configs/main/Protocols/vless.txt"),
-    ("MhdiTaheri V2rayCollector",
-     f"{RAW}/MhdiTaheri/V2rayCollector/main/vless"),
-    ("Leon406 SubCrawler [vless]",
-     f"{RAW}/Leon406/SubCrawler/main/sub/share/vless"),
-    ("ALIILAPRO v2ray",
-     f"{RAW}/ALIILAPRO/v2ray/main/sub.txt"),
-    ("vveg26 chromego_merge",
-     f"{RAW}/vveg26/chromego_merge/main/sub/merged_proxies_new.txt"),
-    ("Surfboardv2ray [sorted vless]",
-     f"{RAW}/Surfboardv2ray/Proxy-sorter/main/subdata/sorted/vless"),
-    ("ermaozi get_subscribe",
-     f"{RAW}/ermaozi/get_subscribe/main/subscribe/v2ray.txt"),
-
-    # ── Те же источники через CDN-зеркало (githack) ────────────────────────
-    ("CDN: barry-far [vless]",
-     f"{GH}/barry-far/V2ray-Configs/main/Splitted-By-Protocol/vless.txt"),
-    ("CDN: Epodonios [vless]",
-     f"{GH}/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt"),
-    ("CDN: soroushmirzaei [vless]",
-     f"{GH}/soroushmirzaei/telegram-configs-collector/main/protocols/vless"),
-    ("CDN: yebekhe [vless]",
-     f"{GH}/yebekhe/TelegramV2rayCollector/main/sub/normal/vless"),
+# Платформенные IP (VK Cloud, Яндекс, Mail.ru и др.) — Ground-Zerro/DomainMapper
+PLATFORM_CIDR = [
+    ("VK / ВКонтакте [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-vkontakte.txt"),
+    ("Яндекс [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-yandex.txt"),
+    ("Mail.ru / MAX [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-mailru.txt"),
+    ("Сбер [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-sber.txt"),
+    ("Тинькофф [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-tinkoff.txt"),
+    ("Госуслуги [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-gosuslugi.txt"),
+    ("Одноклассники [IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/ip-odnoklassniki.txt"),
 ]
 
-OUTPUT_DIR  = "configs"
-TIMEOUT     = 5
-MAX_WORKERS = 100
-PER_SOURCE  = 150
+# Сводные российские CIDR списки
+AGGREGATE_CIDR = [
+    ("igareck [CIDR RU all]",
+     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"),
+    ("igareck [CIDR RU checked — VK/YA/CDN/Beeline]",
+     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt"),
+    ("antifilter.download [IP list]",
+     "https://community.antifilter.download/list/ip.lst"),
+    ("antifilter.download [summarized]",
+     "https://community.antifilter.download/list/summarized.lst"),
+    ("1andrevich Re-filter-lists [ipsets all]",
+     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsets_all.lst"),
+    ("zhongfly runet-ip [CIDR RU]",
+     "https://raw.githubusercontent.com/zhongfly/runet-ip/main/russia-cidr.txt"),
+    ("ipverse [RU IPv4 aggregated]",
+     "https://raw.githubusercontent.com/ipverse/rir-ip/master/country/ru/ipv4-aggregated.txt"),
+    ("nicklvsa russia-blocked [CIDR]",
+     "https://raw.githubusercontent.com/nicklvsa/russia-blocked/main/russia.cidr"),
+    ("Ground-Zerro DomainMapper [all RU IP]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/russia-ip.txt"),
+]
+
+CIDR_SOURCES = PLATFORM_CIDR + AGGREGATE_CIDR
+
+# ── SNI источники ──────────────────────────────────────────────────────────
+SNI_SOURCES = [
+    ("igareck [SNI RU all]",
+     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt"),
+    ("antifilter.download [domains]",
+     "https://community.antifilter.download/list/domains.lst"),
+    ("1andrevich Re-filter-lists [domains all]",
+     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst"),
+    ("1andrevich Re-filter-lists [domains lite]",
+     "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/lists/domains_lite.lst"),
+    ("Ground-Zerro DomainMapper [VK domains]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/dns-vkontakte.txt"),
+    ("Ground-Zerro DomainMapper [Яндекс domains]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/dns-yandex.txt"),
+    ("Ground-Zerro DomainMapper [Mail.ru domains]",
+     "https://raw.githubusercontent.com/Ground-Zerro/DomainMapper/main/platforms/dns-mailru.txt"),
+    ("dartraiden no-Russia-hosts",
+     "https://raw.githubusercontent.com/dartraiden/no-Russia-hosts/master/hosts.txt"),
+    ("nicklvsa russia-blocked [domains]",
+     "https://raw.githubusercontent.com/nicklvsa/russia-blocked/main/russia-domains.txt"),
+]
+
+OUTPUT_DIR = "configs"
+PER_SOURCE = 500   # для CIDR/SNI можно больше — это не серверы
 
 
-def fetch_url(url):
+def fetch(url: str) -> str:
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            return resp.read().decode("utf-8", errors="ignore")
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.read().decode("utf-8", errors="ignore")
     except Exception as e:
         print(f"  [WARN] {url.split('/')[-1][:50]}: {e}")
         return ""
 
 
-def decode_lines(text):
-    text = text.strip()
-    if not text:
-        return []
-    try:
-        decoded = base64.b64decode(text + "==").decode("utf-8", errors="ignore")
-        lines = [l.strip() for l in decoded.splitlines() if l.strip()]
-        if any(l.startswith(("vless://", "vmess://", "trojan://")) for l in lines):
-            return lines
-    except Exception:
-        pass
-    return [l.strip() for l in text.splitlines() if l.strip()]
+def is_cidr(line: str) -> bool:
+    return bool(re.match(r"^\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?$", line.strip()))
 
 
-def parse_vless(uri):
-    try:
-        rest = uri[len("vless://"):]
-        at = rest.rfind("@")
-        if at == -1:
-            return None
-        host_part = rest[at + 1:]
-        for sep in ("?", "#", "/"):
-            i = host_part.find(sep)
-            if i != -1:
-                host_part = host_part[:i]
-        if host_part.startswith("["):
-            b = host_part.find("]")
-            return host_part[1:b], int(host_part[b + 2:])
-        if ":" in host_part:
-            h, p = host_part.rsplit(":", 1)
-            return h, int(p)
-    except Exception:
-        pass
-    return None
+def is_domain(line: str) -> bool:
+    line = line.strip().lstrip(".")
+    return bool(re.match(r"^(?!\-)([a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,}$", line)) \
+           and not line.startswith("#")
 
 
-def measure_tcp(host, port):
-    try:
-        t0 = time.monotonic()
-        with socket.create_connection((host, port), timeout=TIMEOUT):
-            return time.monotonic() - t0
-    except Exception:
-        return None
+def collect_cidr(sources: list) -> set:
+    result = set()
+    for name, url in sources:
+        raw = fetch(url)
+        if not raw:
+            continue
+        items = [l.strip() for l in raw.splitlines() if is_cidr(l)]
+        if not items:
+            print(f"  +    0  {name}")
+            continue
+        if len(items) > PER_SOURCE:
+            items = random.sample(items, PER_SOURCE)
+        print(f"  +{len(items):5d}  {name}")
+        result.update(items)
+    return result
 
 
-def measure_tls(host, port):
-    try:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        t0 = time.monotonic()
-        with socket.create_connection((host, port), timeout=TIMEOUT) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host):
-                return time.monotonic() - t0
-    except Exception:
-        return None
+def collect_sni(sources: list) -> set:
+    result = set()
+    for name, url in sources:
+        raw = fetch(url)
+        if not raw:
+            continue
+        items = []
+        for l in raw.splitlines():
+            l = l.strip().lstrip("*.").lower()
+            if not l or l.startswith("#"):
+                continue
+            parts = l.split()
+            candidate = parts[-1] if len(parts) > 1 else l
+            if is_domain(candidate):
+                items.append(candidate)
+        if not items:
+            print(f"  +    0  {name}")
+            continue
+        if len(items) > PER_SOURCE:
+            items = random.sample(items, PER_SOURCE)
+        print(f"  +{len(items):5d}  {name}")
+        result.update(items)
+    return result
 
 
-def check_config(uri):
-    parsed = parse_vless(uri)
-    if not parsed:
-        return uri, None
-    host, port = parsed
-    t = measure_tcp(host, port)
-    if t is None:
-        t = measure_tls(host, port)
-    return uri, (round(t * 1000) if t is not None else None)
-
-
-def is_reality(uri):
-    return "security=reality" in uri or "reality" in uri.lower()
-
-
-def save_txt(name, lines):
-    with open(f"{OUTPUT_DIR}/{name}", "w") as f:
-        f.write("\n".join(lines) + "\n" if lines else "")
-    print(f"  {name}: {len(lines)} конфигов")
-
-
-def save_sub(name, lines):
-    if not lines:
-        return
-    enc = base64.b64encode("\n".join(lines).encode()).decode()
-    with open(f"{OUTPUT_DIR}/{name}", "w") as f:
-        f.write(enc)
-    print(f"  {name}: base64 ({len(lines)} конфигов)")
+def save(filename: str, items: set) -> int:
+    lines = sorted(items)
+    with open(f"{OUTPUT_DIR}/{filename}", "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"  Сохранено: {filename} — {len(lines)} записей")
+    return len(lines)
 
 
 def main():
-    print(f"=== VLESS Checker | {len(SOURCES)} источников, до {PER_SOURCE} с каждого ===\n")
+    print(f"=== CIDR + SNI Collector ===\n")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    print(f"[1/3] Сбор конфигов...")
-    all_vless = set()
-    for name, url in SOURCES:
-        raw = fetch_url(url)
-        if not raw:
-            continue
-        lines = decode_lines(raw)
-        vless = [l for l in lines if l.startswith("vless://")]
-        if not vless:
-            print(f"  +  0  {name}")
-            continue
-        if len(vless) > PER_SOURCE:
-            vless = random.sample(vless, PER_SOURCE)
-        print(f"  +{len(vless):3d}  {name}")
-        all_vless.update(vless)
-
-    configs = list(all_vless)
-    reality = [c for c in configs if is_reality(c)]
-    regular = [c for c in configs if not is_reality(c)]
-    print(f"\n  Всего: {len(configs)} (reality={len(reality)}, regular={len(regular)})\n")
-
-    if not configs:
-        print("Конфиги не найдены.")
-        sys.exit(0)
-
-    print(f"[2/3] Проверка {len(configs)} конфигов...")
-    results = []
-    done = 0
     start = time.time()
 
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(check_config, uri): uri for uri in configs}
-        for future in as_completed(futures):
-            uri, lat = future.result()
-            results.append((uri, lat))
-            done += 1
-            if done % 200 == 0 or done == len(configs):
-                working = sum(1 for _, l in results if l)
-                print(f"  {done}/{len(configs)} | Рабочих: {working}")
+    print(f"[1/2] Сбор CIDR ({len(CIDR_SOURCES)} источников)...")
+    cidr = collect_cidr(CIDR_SOURCES)
+    print(f"\n  Итого уникальных CIDR: {len(cidr)}\n")
 
-    elapsed = round(time.time() - start, 1)
+    print(f"[2/2] Сбор SNI/доменов ({len(SNI_SOURCES)} источников)...")
+    sni = collect_sni(SNI_SOURCES)
+    print(f"\n  Итого уникальных доменов: {len(sni)}\n")
 
-    working_reality = sorted(
-        [(u, l) for u, l in results if l is not None and is_reality(u)],
-        key=lambda x: x[1]
-    )
-    working_regular = sorted(
-        [(u, l) for u, l in results if l is not None and not is_reality(u)],
-        key=lambda x: x[1]
-    )
-    all_working = [u for u, _ in working_reality] + [u for u, _ in working_regular]
-
-    print(f"\n  Рабочих: {len(all_working)} из {len(configs)} за {elapsed}с\n")
-
-    print("[3/3] Сохранение...")
-    save_txt("working.txt",             all_working)
-    save_sub("working_sub.txt",         all_working)
-    save_txt("working_reality.txt",     [u for u, _ in working_reality])
-    save_sub("working_reality_sub.txt", [u for u, _ in working_reality])
-    save_txt("working_regular.txt",     [u for u, _ in working_regular])
-    save_sub("working_regular_sub.txt", [u for u, _ in working_regular])
+    print("Сохранение...")
+    n_cidr = save("CIDR-RU-all.txt", cidr)
+    n_sni  = save("SNI-RU-all.txt",  sni)
 
     stats = {
         "last_updated":    time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "sources":         len(SOURCES),
+        "cidr_sources":    len(CIDR_SOURCES),
+        "sni_sources":     len(SNI_SOURCES),
         "per_source":      PER_SOURCE,
-        "total_checked":   len(configs),
-        "working_total":   len(all_working),
-        "working_reality": len(working_reality),
-        "working_regular": len(working_regular),
-        "elapsed_seconds": elapsed,
+        "cidr_total":      n_cidr,
+        "sni_total":       n_sni,
+        "elapsed_seconds": round(time.time() - start, 1),
     }
     with open(f"{OUTPUT_DIR}/stats.json", "w") as f:
         json.dump(stats, f, indent=2)
 
-    print("\nГотово.")
+    print(f"\nГотово. CIDR: {n_cidr}, SNI: {n_sni}")
 
 
 if __name__ == "__main__":
