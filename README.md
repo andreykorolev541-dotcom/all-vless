@@ -21,10 +21,10 @@
 ## Ссылки для VPN-клиента
 
 Все рабочие конфиги:
-https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/working_sub.txt
+https://raw.githubusercontent.com/Rageru01/white-list/main/configs/working_sub.txt
 
 Только Reality (рекомендуется для России):
-https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/working_reality_sub.txt
+https://raw.githubusercontent.com/Rageru01/white-list/main/configs/working_reality_sub.txt
 
 ## Как добавить подписку в клиент
 
@@ -64,10 +64,10 @@ https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/wor
 ## Структура репозитория
 
 scripts/
-  check_configs.py       сбор, проверка и сохранение конфигов
+  check_configs.py         сбор, проверка и сохранение конфигов
 .github/workflows/
-  update-config.yml      автоматический запуск по расписанию
+  update-config.yml        автоматический запуск по расписанию
 configs/
-  working_sub.txt        результат (генерируется автоматически)
+  working_sub.txt          результат (генерируется автоматически)
   working_reality_sub.txt
   stats.json
