@@ -1,76 +1,73 @@
-# RU CIDR & SNI Collector
+# VLESS Reality Checker
 
-Автоматически собирает актуальные списки IP-диапазонов (CIDR) и доменов (SNI) российских сервисов из нескольких публичных источников, объединяет их и обновляет каждые 6 часов без участия пользователя.
+Автоматически собирает VLESS конфиги из 20+ популярных репозиториев и Telegram-агрегаторов, проверяет каждый на доступность и сохраняет только рабочие. Обновляется каждые 6 часов без участия пользователя.
 
 ## Что это и зачем
 
-**CIDR** — список IP-диапазонов российских сетей (VK, Яндекс, CDN, провайдеры и др.)
-**SNI** — список доменных имён российских сайтов
-
-Используются в VPN-клиентах для **раздельной маршрутизации (split tunneling)**:
-- Российские сайты открываются напрямую — быстро, без VPN
-- Всё остальное идёт через VPN — безопасно
+Берёт по 150 конфигов из каждого источника, проверяет TCP/TLS подключение к каждому серверу и оставляет только те, что реально отвечают. Reality конфиги хранятся отдельно — они работают стабильнее в России.
 
 ## Файлы
 
 | Файл | Описание |
 |------|----------|
-| configs/CIDR-RU-all.txt | Объединённый список IP-диапазонов |
-| configs/SNI-RU-all.txt | Объединённый список доменов |
+| configs/working_sub.txt | Все рабочие конфиги — base64 подписка |
+| configs/working_reality_sub.txt | Только Reality — base64 подписка (рекомендуется) |
+| configs/working_regular_sub.txt | Только обычные VLESS — base64 подписка |
+| configs/working.txt | Все рабочие — plain text |
+| configs/working_reality.txt | Только Reality — plain text |
+| configs/working_regular.txt | Только обычные VLESS — plain text |
 | configs/stats.json | Статистика последнего обновления |
 
 ## Ссылки для VPN-клиента
 
-CIDR (IP-диапазоны):
-https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/CIDR-RU-all.txt
+Все рабочие конфиги:
+https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/working_sub.txt
 
-SNI (домены):
-https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/SNI-RU-all.txt
+Только Reality (рекомендуется для России):
+https://raw.githubusercontent.com/andreykorolev541-dotcom/vless/main/configs/working_reality_sub.txt
 
-## Как добавить в клиент
+## Как добавить подписку в клиент
 
 ### v2rayNG (Android)
-Настройки → Параметры маршрутизации → Добавить правило → вставить ссылку
+Нижнее меню → Подписки → + → вставить ссылку → Обновить
 
 ### Hiddify (Android / iOS)
-Настройки → Маршрутизация → Custom Rules → вставить ссылку
++ → Добавить профиль → вставить ссылку
 
 ### v2rayN (Windows)
-Настройки → Настройки маршрутизации → Добавить набор правил → вставить ссылку
+Подписки → Настройки подписок → Добавить → вставить ссылку → Обновить
 
-### Clash / Clash Meta
-Использовать CIDR-RU-all.txt как ip-cidr rule-set, SNI-RU-all.txt как domain rule-set
+### Streisand (iOS)
+Настройки → Импорт из URL → вставить ссылку
 
 ## Источники
 
-### CIDR
-- igareck/vpn-configs-for-russia
-- antifilter.download
-- 1andrevich/Re-filter-lists
-- nicklvsa/russia-blocked
-- zhongfly/runet-ip
-- ipverse/rir-ip
+- igareck/vpn-configs-for-russia — Reality белые списки для России
+- soroushmirzaei/telegram-configs-collector — агрегатор 100+ Telegram каналов
+- yebekhe/TelegramV2rayCollector — агрегатор Telegram каналов
+- itsyebekhe/HiN-VPN
+- barry-far/V2ray-Configs
+- Epodonios/v2ray-configs
+- peasoft/NoMoreVPN — Россия фокус
+- mahdibland/V2RayAggregator
+- и другие популярные агрегаторы
 
-### SNI
-- igareck/vpn-configs-for-russia
-- antifilter.download
-- 1andrevich/Re-filter-lists
-- nicklvsa/russia-blocked
-- dartraiden/no-Russia-hosts
-- zapret-info/z-i
+## Как устроено
+
+Из каждого источника берётся случайная выборка до 150 VLESS конфигов. Затем к каждому серверу устанавливается TCP (или TLS) соединение — если сервер отвечает, конфиг считается рабочим. Reality конфиги сортируются по скорости ответа и идут первыми.
 
 ## Обновление
 
-Списки обновляются автоматически каждые 6 часов через GitHub Actions.
-Для ручного обновления: вкладка Actions → Update Working Configs → Run workflow.
+Автоматически каждые 6 часов через GitHub Actions.
+Ручной запуск: Actions → Update Working Configs → Run workflow.
 
 ## Структура репозитория
 
 scripts/
-  check_configs.py       скрипт сбора и объединения списков
+  check_configs.py       сбор, проверка и сохранение конфигов
 .github/workflows/
   update-config.yml      автоматический запуск по расписанию
 configs/
-  CIDR-RU-all.txt        результат (генерируется автоматически)
-  SNI-RU-all.txt         результат (генерируется автоматически)
-  stats.json             статистика (генерируется автоматически)
+  working_sub.txt        результат (генерируется автоматически)
+  working_reality_sub.txt
+  stats.json
