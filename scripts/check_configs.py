@@ -249,8 +249,8 @@ SOURCES = [
         "priority": 7, "tg": True },
 ]
 
-OUTPUT_DIR  = "configs"
-TARGET_KB   = 52        # plain-файл ~52KB → base64 ~70KB
+OUTPUT_DIR   = "configs"
+TARGET_KB    = 52        # plain ~52KB → base64 ~70KB
 TARGET_BYTES = TARGET_KB * 1024
 
 HEADERS = {
@@ -280,7 +280,7 @@ def fetch(urls: list, is_tg: bool = False) -> str:
                     print(f"    FAIL [{r.status_code}]: {url}")
                     break
             except requests.exceptions.Timeout:
-                print(f"    TIMEOUT (попытка {attempt+1}): {url}")
+                print(f"    TIMEOUT (попытка {attempt + 1}): {url}")
             except Exception as e:
                 print(f"    ERR: {url} — {e}")
                 break
@@ -337,11 +337,19 @@ def extract_vless(text: str) -> list:
     return result
 
 
+def sanitize_tag(label: str) -> str:
+    """Только безопасные символы в #фрагменте URL."""
+    label = re.sub(r"^tg-", "TG_", label)
+    label = re.sub(r"[^A-Za-z0-9._\-]", "_", label)
+    return label[:50]
+
+
 def tag(cfg: str, source_name: str) -> str:
     if "#" not in cfg:
-        label = re.sub(r"^tg-", "TG:", source_name)
-        return f"{cfg}#{label}"
-    return cfg
+        return f"{cfg}#{sanitize_tag(source_name)}"
+    base, frag = cfg.rsplit("#", 1)
+    frag_clean = re.sub(r"[^A-Za-z0-9._\-\u0400-\u04FF ]", "", frag).strip()
+    return f"{base}#{frag_clean}" if frag_clean else base
 
 
 def trim_to_size(configs: list, max_bytes: int) -> list:
@@ -358,28 +366,31 @@ def trim_to_size(configs: list, max_bytes: int) -> list:
 
 def save(filename: str, configs_list: list) -> int:
     configs_list = trim_to_size(configs_list, TARGET_BYTES)
-    if not configs_list:
+    # Финальная проверка: только валидные vless:// строки без пробелов
+    clean = [c.strip() for c in configs_list
+             if c.strip().startswith("vless://") and "@" in c and " " not in c.split("#")[0]]
+    if not clean:
         open(f"{OUTPUT_DIR}/{filename}_plain.txt",  "w").close()
         open(f"{OUTPUT_DIR}/{filename}_base64.txt", "w").close()
         return 0
-    plain = "\n".join(configs_list) + "\n"
-    b64   = base64.b64encode(plain.encode("utf-8")).decode()
+    plain = "\n".join(clean) + "\n"
+    b64   = base64.b64encode(plain.encode("utf-8")).decode("utf-8")
     with open(f"{OUTPUT_DIR}/{filename}_plain.txt",  "w", encoding="utf-8") as f:
         f.write(plain)
     with open(f"{OUTPUT_DIR}/{filename}_base64.txt", "w", encoding="utf-8") as f:
         f.write(b64)
     plain_kb = len(plain.encode()) / 1024
     b64_kb   = len(b64.encode())   / 1024
-    print(f"  {filename}: {len(configs_list)} конфигов  "
+    print(f"  {filename}: {len(clean)} конфигов  "
           f"(plain={plain_kb:.1f}KB, base64={b64_kb:.1f}KB)")
-    return len(configs_list)
+    return len(clean)
 
 
 def main():
-    print("═" * 60)
+    print("=" * 60)
     print("  VLESS CONFIG AGGREGATOR")
-    print(f"  Лимит на файл: ~{TARGET_KB}KB plain / ~{int(TARGET_KB*4/3)}KB base64")
-    print("═" * 60)
+    print(f"  Лимит: ~{TARGET_KB}KB plain / ~{int(TARGET_KB * 4 / 3)}KB base64 на файл")
+    print("=" * 60)
     start = time.time()
 
     all_fps:      set  = set()
@@ -435,12 +446,12 @@ def main():
               f"(IPv6={sum(1 for c in extracted if is_ipv6(c))}, "
               f"REALITY={sum(1 for c in extracted if is_reality(c))})")
 
-    print(f"\n{'─'*40}")
+    print(f"\n{'─' * 40}")
     print(f"Уникальных итого : {len(all_configs)}")
     print(f"  REALITY        : {len(reality_set)}")
     print(f"  Россия         : {len(russia_set)}")
     print(f"  IPv6           : {len(ipv6_set)}")
-    print(f"{'─'*40}")
+    print(f"{'─' * 40}")
 
     reality_list = list(reality_set)
     russia_list  = list(russia_set - reality_set)
@@ -475,12 +486,12 @@ def main():
     with open(f"{OUTPUT_DIR}/stats.json", "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
 
-    print(f"\n✓ Готово за {stats['elapsed_seconds']}с")
+    print(f"\nГотово за {stats['elapsed_seconds']}с")
     print(f"\nПодписки:")
-    print(f"  Все      → configs/vless_base64.txt         ({n_all} конфигов)")
-    print(f"  REALITY  → configs/vless_reality_base64.txt ({n_reality} конфигов)")
-    print(f"  Россия   → configs/vless_russia_base64.txt  ({n_russia} конфигов)")
-    print(f"  IPv6     → configs/vless_ipv6_base64.txt    ({n_ipv6} конфигов)")
+    print(f"  Все      → configs/vless_base64.txt          ({n_all} конфигов)")
+    print(f"  REALITY  → configs/vless_reality_base64.txt  ({n_reality} конфигов)")
+    print(f"  Россия   → configs/vless_russia_base64.txt   ({n_russia} конфигов)")
+    print(f"  IPv6     → configs/vless_ipv6_base64.txt     ({n_ipv6} конфигов)")
 
 
 if __name__ == "__main__":
