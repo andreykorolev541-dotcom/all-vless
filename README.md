@@ -1,8 +1,6 @@
 # VLESS Subscription Aggregator
 
-Автоматический сборщик VLESS-конфигураций из 60+ источников: GitHub-агрегаторов и публичных Telegram-каналов.
-
-Приоритет при отборе: **REALITY → Россия → IPv6 → остальные**. Обновляется каждые 6 часов через GitHub Actions. Каждый файл подписки весит ~70KB — оптимально для мобильных клиентов.
+Автоматический сборщик VLESS-конфигураций из популярных Telegram-каналов и GitHub-агрегаторов. Упор на Россию и обход РКН. Обновляется каждые 6 часов. Каждый файл ~70KB — оптимально для Hiddify, v2rayNG, Nekobox.
 
 ---
 
@@ -12,7 +10,7 @@
 
 https://raw.githubusercontent.com/Rageru01/white-list/main/configs/vless_base64.txt
 
-### Только REALITY — лучший обход DPI / РКН
+### Только REALITY — лучший обход РКН/DPI
 
 https://raw.githubusercontent.com/Rageru01/white-list/main/configs/vless_reality_base64.txt
 
@@ -24,63 +22,61 @@ https://raw.githubusercontent.com/Rageru01/white-list/main/configs/vless_russia_
 
 https://raw.githubusercontent.com/Rageru01/white-list/main/configs/vless_ipv6_base64.txt
 
-> Plain-text версии доступны с суффиксом `_plain.txt` вместо `_base64.txt`.
+> Plain-text версии: замените `_base64.txt` на `_plain.txt`
 
 ---
 
-## 📱 Как добавить подписку
+## 📱 Как добавить
 
-**Hiddify:** Откройте Hiddify → **+** → **Добавить подписку по URL** → вставьте ссылку → **Сохранить** → обновить.
+**Hiddify:** + → Добавить подписку по URL → вставить ссылку → Сохранить → обновить.
 
-**v2rayNG:** **☰** → **Subscription group** → **+** → вставьте ссылку → **OK** → **☰** → **Update subscription**.
+**v2rayNG:** ☰ → Subscription group → + → вставить ссылку → OK → ☰ → Update subscription.
 
-**Nekobox / NekoRay:** **Profiles** → **New group** → тип **Subscription** → вставьте ссылку → **OK** → правой кнопкой → **Update**.
-
-**Streisand / Sing-Box:** Добавьте ссылку как Remote Profile.
+**Nekobox:** Profiles → New group → Subscription → вставить ссылку → Update.
 
 ---
 
 ## 📦 Источники
 
-### Telegram-каналы
+### Популярные Telegram-каналы
 
-| Канал | Особенность |
-|-------|-------------|
-| @v2ray_configs_pool | Самый большой пул, обновляется несколько раз в день |
-| @VlessConfig | VLESS-only, высокое качество |
+| Канал | Описание |
+|-------|----------|
+| @igareck | Игорь Ецкало — один из самых известных в РФ |
+| @vpnKeys | Крупнейший русский канал с ключами |
+| @freevpnkeys | Популярный русский канал |
+| @vpn_fail | Новости и ключи для обхода блокировок |
+| @antiblock_soft | Обход блокировок РФ |
+| @vlessfree | VLESS конфиги |
+| @v2rayng_configs | Большой пул конфигов |
+| @v2ray_configs_pool | Один из крупнейших пулов |
+| @outline_keysss | Outline/VLESS ключи |
+| @iP_CF | Cloudflare IP — стабильно работает в РФ |
 | @DirectVPN | Прямые конфиги |
-| @proxy_mtn | Активный пул |
-| @freev2rayssr / @FreeV2rays | Бесплатные конфиги |
 | @ConfigsHUB | Агрегатор каналов |
-| @PrivateVPNs | Приватные конфиги |
-| @vless_vmess_v2rayng | Смешанный пул |
-| @iP_CF | Cloudflare IP конфиги |
-| @proxystore11 | Регулярные обновления |
+| @proxy_mtn | Активный канал |
 
-### GitHub-агрегаторы
+### GitHub
 
-| Репозиторий | Особенность |
-|-------------|-------------|
-| soroushmirzaei/telegram-configs-collector | Парсит 100+ TG-каналов, разбивка по странам |
+| Репозиторий | Описание |
+|-------------|----------|
+| soroushmirzaei/telegram-configs-collector | Парсит 100+ TG-каналов, есть срез по России |
+| Surfboardv2ray/Proxy-sorter | Сортировка по странам, Россия отдельно |
+| barry-far/V2ray-Configs | ~15k звёзд, один из старейших |
 | MrMohebi/xray-proxy-grabber-telegram | Прямой парсинг Telegram |
-| Surfboardv2ray/TGParse + Proxy-sorter | TG-парсер + сортировка по странам |
-| yebekhe/TVC | Активен годами |
-| Epodonios/v2ray-configs | Ежедневные обновления |
-| barry-far/V2ray-Configs | Один из старейших агрегаторов |
 | mahdibland/V2RayAggregator | Крупный merger |
-| lagzian/SS-Collector | REALITY и IPv6 |
+| yebekhe/TVC | Telegram Configs, активен годами |
 | coldwater-10/V2rayCollector | REALITY + Россия |
+| lagzian/SS-Collector | REALITY и IPv6 |
 
 ---
 
 ## 🔄 Автоматизация
 
-Работает через GitHub Actions. По расписанию — каждые 6 часов. Вручную — Actions → *Update Working Configs* → **Run workflow**.
-
-При каждом запуске скрипт загружает данные из 60+ источников, дедуплицирует по `uuid@host:port`, применяет квоты (REALITY → Россия → IPv6 → прочие) и сохраняет в 4 файла по ~70KB каждый.
+По расписанию — каждые 6 часов. Вручную — Actions → *Update Working Configs* → **Run workflow**.
 
 ---
 
-## 📊 Статистика последнего обновления
+## 📊 Статистика
 
 https://raw.githubusercontent.com/Rageru01/white-list/main/configs/stats.json
