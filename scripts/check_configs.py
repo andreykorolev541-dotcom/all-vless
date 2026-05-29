@@ -6,14 +6,16 @@ import base64
 import random
 import requests
 
-# ── Лучшие и самые жирные базы (igareck, mahdibland, yebekhe) ────────────────
+# ── Скачиваем репозитории через независимый CDN jsDelivr (Обход блокировок GitHub) ──
 VLESS_SOURCES = [
-    ("Igareck-Vless", 
-     "https://raw.githubusercontent.com/igareck/vless/main/vless.txt"),
-    ("Mahdibland-Merge", 
-     "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt"),
-    ("Yebekhe-TVC", 
-     "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/protocols/vless")
+    ("Igareck-CDN", 
+     "https://cdn.jsdelivr.net/gh/igareck/vless@main/vless.txt"),
+    ("Mahdibland-CDN", 
+     "https://cdn.jsdelivr.net/gh/mahdibland/V2RayAggregator@master/sub/sub_merge.txt"),
+    ("Yebekhe-CDN", 
+     "https://cdn.jsdelivr.net/gh/yebekhe/TVC@main/subscriptions/protocols/vless"),
+    ("Aghil-CDN",
+     "https://cdn.jsdelivr.net/gh/AnonymoxPlus/V2Ray-Configs@main/V2Ray_Configs.txt")
 ]
 
 OUTPUT_DIR = "configs"
@@ -21,7 +23,7 @@ MAX_CONFIGS = 200
 
 
 def fetch(url: str) -> str:
-    """Скачивает сырые данные с серверов"""
+    """Скачивает данные через CDN без блокировок со стороны GitHub API"""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     }
@@ -29,8 +31,10 @@ def fetch(url: str) -> str:
         response = requests.get(url, headers=headers, timeout=30)
         if response.status_code == 200:
             return response.text.strip()
+        print(f"  [WARN] Ошибка CDN для {url[:40]}: код {response.status_code}")
         return ""
-    except Exception:
+    except Exception as e:
+        print(f"  [WARN] Ошибка сети через CDN: {e}")
         return ""
 
 
@@ -47,13 +51,13 @@ def decode_base64(data: str) -> str:
 
 
 def is_vless(line: str) -> bool:
-    """Проверяет, является ли строка VLESS ссылкой"""
+    """Проверяет, является ли строка чистой VLESS ссылкой"""
     line = line.strip()
     return line.startswith("vless://") and "@" in line
 
 
 def extract_vless_from_text(text: str) -> list:
-    """Вытаскивает все VLESS строки из любого текстового блока"""
+    """Вытягивает все VLESS строки из любого текстового блока"""
     found = []
     for line in text.splitlines():
         line = line.strip()
@@ -71,6 +75,8 @@ def collect_vless(sources: list) -> set:
         if not raw or len(raw) < 10:
             continue
             
+        print(f"  [*] {name}: Успешно скачано {len(raw)} байт.")
+        
         # Способ 1: Пробуем распарсить как обычный текст
         source_configs = extract_vless_from_text(raw)
         
@@ -81,10 +87,10 @@ def collect_vless(sources: list) -> set:
                 source_configs = extract_vless_from_text(decoded)
                 
         if source_configs:
-            print(f"  [+] {name}: Успешно вытащили {len(source_configs)} конфигураций.")
+            print(f"  [+] {name}: Успешно извлечено {len(source_configs)} конфигураций.")
             result.update(source_configs)
         else:
-            print(f"  [-] {name}: Не удалось извлечь прокси (пусто или не тот формат).")
+            print(f"  [-] {name}: Не удалось найти VLESS-строки.")
         
     return result
 
@@ -97,7 +103,7 @@ def save_subscriptions(configs: set):
     if len(configs_list) > MAX_CONFIGS:
         random.shuffle(configs_list)
         configs_list = configs_list[:MAX_CONFIGS]
-        print(f"  [*] Сработало ограничение: выбрано {MAX_CONFIGS} случайных прокси.")
+        print(f"  [*] Применен лимит: выбрано {MAX_CONFIGS} случайных прокси.")
         
     if not configs_list:
         configs_list = ["vless://00000000-0000-0000-0000-000000000000@127.0.0.1:443?encryption=none&security=tls#No_Configs_Available_Try_Update_Later"]
@@ -117,11 +123,11 @@ def save_subscriptions(configs: set):
 
 
 def main():
-    print("=== ОБНОВЛЕННЫЙ ТАРАННЫЙ ПАРСЕР VLESS ===")
+    print("=== ОБНОВЛЕНИЕ БАЗЫ VLESS ЧЕРЕЗ CDN ===")
     start = time.time()
 
     vless_configs = collect_vless(VLESS_SOURCES)
-    print(f"\nВсего уникальных конфигураций в обработке: {len(vless_configs)}")
+    print(f"\nВсего уникальных конфигураций обработано: {len(vless_configs)}")
 
     total_saved = save_subscriptions(vless_configs)
 
