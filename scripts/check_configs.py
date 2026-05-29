@@ -28,16 +28,47 @@ GITHUB_SOURCES = [
         "name": "yebekhe",
         "urls": ["https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/protocols/vless"]
     },
-]
-
-TELEGRAM_CHANNELS = [
-    "v2rayng_config",
-    "vlessconfig",
-    "reality_config",
-    "freev2rayssr",
-    "ConfigsHUB",
-    "v2ray_configs_pool",
-    "proxy_mtproto_v2ray",
+    {
+        "name": "Epodonios",
+        "urls": ["https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Configs/vless.txt"]
+    },
+    {
+        "name": "peasoft",
+        "urls": ["https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.txt"]
+    },
+    {
+        "name": "awesome-vpn",
+        "urls": ["https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all"]
+    },
+    # Эти репо специально агрегируют из Telegram каналов
+    {
+        "name": "vless-reality-ezpz",
+        "urls": ["https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt"]
+    },
+    {
+        "name": "rxn957",
+        "urls": ["https://raw.githubusercontent.com/rxn957/rxn957/main/vless.txt"]
+    },
+    {
+        "name": "HW7X-vless",
+        "urls": ["https://raw.githubusercontent.com/HW7X/vless-config/main/vless.txt"]
+    },
+    {
+        "name": "vpei",
+        "urls": ["https://raw.githubusercontent.com/vpei/Free-Node-Merge/main/o/node.txt"]
+    },
+    {
+        "name": "tbbatbb",
+        "urls": ["https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt"]
+    },
+    {
+        "name": "lagzian-ss-collector",
+        "urls": ["https://raw.githubusercontent.com/lagzian/SS-Collector/main/VLESS/vless.txt"]
+    },
+    {
+        "name": "lagzian-reality",
+        "urls": ["https://raw.githubusercontent.com/lagzian/SS-Collector/main/VLESS/reality.txt"]
+    },
 ]
 
 OUTPUT_DIR = "configs"
@@ -45,7 +76,9 @@ MAX_CONFIGS = 200
 
 
 def fetch(urls: list) -> str:
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    }
     for url in urls:
         try:
             r = requests.get(url, headers=headers, timeout=20)
@@ -57,35 +90,6 @@ def fetch(urls: list) -> str:
         except Exception as e:
             print(f"    ERROR: {url} — {e}")
     return ""
-
-
-def fetch_telegram(channel: str) -> list:
-    """Парсит публичный веб-просмотр Telegram канала"""
-    url = f"https://t.me/s/{channel}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-    try:
-        r = requests.get(url, headers=headers, timeout=20)
-        if r.status_code != 200:
-            print(f"    FAIL {r.status_code}: {url}")
-            return []
-
-        # Ищем все vless:// ссылки в HTML странице
-        found = re.findall(r'vless://[^\s\'"<>&]+', r.text)
-        # Декодируем HTML entities
-        cleaned = []
-        for cfg in found:
-            cfg = cfg.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-            if "@" in cfg:
-                cleaned.append(cfg)
-
-        print(f"    OK: {url} — найдено {len(cleaned)}")
-        return cleaned
-
-    except Exception as e:
-        print(f"    ERROR: {url} — {e}")
-        return []
 
 
 def decode_base64(data: str) -> str:
@@ -103,6 +107,12 @@ def extract_vless(text: str) -> list:
         line = line.strip()
         if line.startswith("vless://") and "@" in line:
             result.append(line)
+    # Также ищем через regex на случай если слитно
+    found = re.findall(r'vless://[A-Za-z0-9\-]+@[^\s\'"<>&\n]+', text)
+    for cfg in found:
+        cfg = cfg.replace("&amp;", "&")
+        if cfg not in result:
+            result.append(cfg)
     return result
 
 
@@ -111,7 +121,6 @@ def main():
     start = time.time()
     unique = set()
 
-    # GitHub источники
     print("\n── GitHub источники ──")
     for source in GITHUB_SOURCES:
         name = source["name"]
@@ -134,18 +143,6 @@ def main():
             unique.update(extracted)
         else:
             print(f"  VLESS строк не найдено")
-
-    # Telegram каналы
-    print("\n── Telegram каналы ──")
-    for channel in TELEGRAM_CHANNELS:
-        print(f"\n[@{channel}]")
-        found = fetch_telegram(channel)
-        if found:
-            unique.update(found)
-        else:
-            print(f"  Конфигов не найдено")
-        # Пауза чтобы не получить бан
-        time.sleep(2)
 
     configs = list(unique)
     print(f"\nВсего уникальных: {len(configs)}")
