@@ -33,7 +33,9 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            STATS=$(python -c "import json; d=json.load(open('configs/stats.json')); print(f\"cidr={d['cidr_total']}, sni={d['sni_total']}\")")
+            # Извлекаем количество собранных VLESS конфигураций из нового stats.json
+            STATS=$(python -c "import json; d=json.load(open('configs/stats.json')); print(f\"vless={d['total_configs']}\")")
             git commit -m "chore: auto-update configs [$STATS] $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push
           fi
+          
