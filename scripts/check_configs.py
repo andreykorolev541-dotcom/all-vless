@@ -20,27 +20,39 @@ SOURCES_POOL = [
         ]
     },
     {
-        "name": "sashalisk",
-        "urls": [
-            "https://raw.githubusercontent.com/sashalisk/VPN/main/vless",
-        ]
-    },
-    {
-        "name": "ermaozi",
-        "urls": [
-            "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/vless.txt",
-        ]
-    },
-    {
-        "name": "mheidari98",
-        "urls": [
-            "https://raw.githubusercontent.com/mheidari98/.proxy/main/vless",
-        ]
-    },
-    {
         "name": "Epodonios",
         "urls": [
             "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Configs/vless.txt",
+        ]
+    },
+    {
+        "name": "mahdibland",
+        "urls": [
+            "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge_vless.txt",
+        ]
+    },
+    {
+        "name": "peasoft",
+        "urls": [
+            "https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.txt",
+        ]
+    },
+    {
+        "name": "mfuu",
+        "urls": [
+            "https://raw.githubusercontent.com/mfuu/v2ray/master/vless.txt",
+        ]
+    },
+    {
+        "name": "yebekhe",
+        "urls": [
+            "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/protocols/vless",
+        ]
+    },
+    {
+        "name": "awesome-vpn",
+        "urls": [
+            "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all",
         ]
     },
 ]
