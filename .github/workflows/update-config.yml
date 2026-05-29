@@ -11,7 +11,7 @@ permissions:
 jobs:
   check-and-update:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -27,33 +27,33 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      # Настраиваем Git заранее
       - name: Configure Git
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Синхронизируем ветку, пока всё абсолютно чисто — никаких ошибок не будет
       - name: Pull latest changes
         run: git pull --rebase origin main
 
-      # Очищаем старое и запускаем сборщик
       - name: Clear old configs
         run: rm -rf configs && mkdir -p configs
 
       - name: Run collector
         run: python scripts/check_configs.py
 
-      # Просто делай коммит и пуш — ветка уже актуальна
       - name: Commit and Push updates
         run: |
-          git add configs/vless_plain.txt configs/vless_base64.txt configs/stats.json
-          
+          git add configs/vless_plain.txt \
+                  configs/vless_base64.txt \
+                  configs/vless_ipv6_plain.txt \
+                  configs/vless_ipv6_base64.txt \
+                  configs/stats.json
+
           if git diff --cached --quiet; then
             echo "No changes detected. Skipping commit."
           else
-            COUNT=$(python -c "import json; print(json.load(open('configs/stats.json'))['total_configs'])")
-            git commit -m "chore: auto-update configs [vless=$COUNT] $(date -u +'%Y-%m-%d %H:%M UTC')"
+            TOTAL=$(python -c "import json; d=json.load(open('configs/stats.json')); print(d['total_configs'])")
+            IPV6=$(python -c "import json; d=json.load(open('configs/stats.json')); print(d['ipv6_configs'])")
+            git commit -m "chore: auto-update configs [total=$TOTAL ipv6=$IPV6] $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push origin main
           fi
-          
