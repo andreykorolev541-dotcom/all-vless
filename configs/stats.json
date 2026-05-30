@@ -1,12 +1,12 @@
 {
-  "last_updated": "2026-05-30T13:12:49Z",
-  "total_configs": 120,
-  "reality_configs": 26,
+  "last_updated": "2026-05-30T19:04:14Z",
+  "total_configs": 119,
+  "reality_configs": 25,
   "russia_configs": 0,
   "ipv6_configs": 0,
-  "ipv4_configs": 120,
+  "ipv4_configs": 119,
   "target_kb": 52,
-  "elapsed_seconds": 9.32,
+  "elapsed_seconds": 9.38,
   "sources": {
     "igareck": 0,
     "vpnKeys": 0,
@@ -18,7 +18,7 @@
     "antiblock_soft": 0,
     "vlessfree": 0,
     "v2rayng_configs": 0,
-    "v2ray_configs_pool": 12,
+    "v2ray_configs_pool": 13,
     "soroushmirzaei-ipv6": 0,
     "Surfboardv2ray-russia": 0,
     "Surfboardv2ray-reality": 0,
@@ -44,7 +44,7 @@
     "yebekhe-reality": 0,
     "lagzian-ipv6": 0,
     "Epodonios": 0,
-    "ALIILAPRO": 88,
+    "ALIILAPRO": 86,
     "v2rayse-russia": 0
   }
 }
